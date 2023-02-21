@@ -15,6 +15,9 @@ data = data[-1, ]  # Remove the first row which contains the column names
 # For computation of duration, convert the datatype of `Time` from chr to numeric 
 data <- data %>% mutate(Time = as.numeric(Time)) 
 
+# Find and store rows with missing values for `Modifier 1`
+data.problems <- data %>% filter(`Modifier 1` == "")
+
 ##################
 # Clean the data #
 ##################
