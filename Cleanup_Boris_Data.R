@@ -31,11 +31,21 @@ data.cleaned <- data %>%
   # Group by every 2 rows (START, STOP)
   group_by(grp = as.integer(gl(n(), 2 , n()))) %>%
   # Take the difference in Time of every two rows to compute duration
-  mutate(Duration = diff(Time)) %>% 
+  mutate(Duration = round(diff(Time), 3),
+         Comment = paste(Comment)) %>% 
   # This also takes the difference in Time but drops columns 
   # summarize(Duration = diff(Time)) %>% 
   # Only keep the rows with Status = START (remove redundant rows)
-  filter(Status == "START")
+  filter(Status == "START") %>%
+  # Add Start Time and End Times
+  mutate(Start_Time = Time,
+         End_Time = Time + Duration) %>%
+  # Remove Column that tracks Groups
+  subset(select = -c(grp)) %>%
+  # Select only relevant remaining columns
+  select(c("Start_Time", "End_Time", "Duration", "Subject", "Behavior", "Behavioral category", "Modifier 1", "Comment")) %>%
+  # Order by Start_Time so that rows are ordered by the start of the event
+  arrange(Start_Time)
 
 
 ##########################################
