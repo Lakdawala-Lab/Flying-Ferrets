@@ -58,7 +58,7 @@ data_sub_donor_object <- subset(data_behave, Subject == 'Donor' &
                                 Modifier.1 %in% c('Ball', 'Cat Tower Toy', 'Cups', 'Keys', 'Pen Walls', 'Plush', 'Robot'))
 
 # How many times that donor has interaction with other objects
-table_donor_hehave_object <- data_sub_donor_object %>%ß
+table_donor_hehave_object <- data_sub_donor_object %>%
   count(Behavior, Modifier.1)
 
 
@@ -82,6 +82,151 @@ table_robot <- table_modi_robot %>%
   count(Subject, Behavior)
 
 
+# Second, we start with Keys
+data_first_keys <- data_behave[15:nrow(data_behave), ]
+
+data_keys_only <- data_first_keys
+
+# Then, we can make a table about how each ferret touches keys after donor touches the keys
+
+table_modi_keys <- subset(data_keys_only, Subject %in% c('R1', 'R2', 'R3', 'R4') & Modifier.1 == 'Keys')
+
+# Table about the frequency of interaction the keys after donor interacts with it.
+table_keys <- table_modi_keys %>%
+  count(Subject, Behavior)
+
+
+# Third, we start with Ball 
+data_first_ball <- data_behave[17:nrow(data_behave), ]
+
+data_ball_only <- data_first_ball
+
+# Then, we can make a table about how each ferret touches ball after donor touches the ball
+
+table_modi_ball <- subset(data_ball_only, Subject %in% c('R1', 'R2', 'R3', 'R4') & Modifier.1 == 'Ball')
+
+# Table about the frequency of interaction the ball after donor interacts with it.
+table_ball<- table_modi_ball %>%
+  count(Subject, Behavior)
+
+# Fourth, we start with Plush 
+data_first_plush <- data_behave[21:nrow(data_behave), ]
+
+data_plush_only <- data_first_plush
+
+# Then, we can make a table about how each ferret touches plush after donor touches the plush
+
+table_modi_plush <- subset(data_plush_only, Subject %in% c('R1', 'R2', 'R3', 'R4') & Modifier.1 == 'Plush')
+
+# Table about the frequency of interaction the plush after donor interacts with it.
+table_plush<- table_modi_plush %>%
+  count(Subject, Behavior)
+
+# Fifth, we start with Pen Walls
+data_first_penwalls <- data_behave[47:nrow(data_behave), ]
+
+data_penwalls_only <- data_first_penwalls
+
+# Then, we can make a table about how each ferret touches penwalls after donor touches the penwalls
+
+table_modi_penwalls <- subset(data_penwalls_only, Subject %in% c('R1', 'R2', 'R3', 'R4') & Modifier.1 == 'Pen Walls')
+
+# Table about the frequency of interaction the Pen Walls after donor interacts with it.
+table_penwalls<- table_modi_penwalls %>%
+  count(Subject, Behavior)
+
+# Sixth, we start with Cups
+data_first_cups <- data_behave[86:nrow(data_behave), ]
+
+data_cups_only <- data_first_cups
+
+# Then, we can make a table about how each ferret touches cups after donor touches the cups
+
+table_modi_cups <- subset(data_cups_only, Subject %in% c('R1', 'R2', 'R3', 'R4') & Modifier.1 == 'Cups')
+
+# Table about the frequency of interaction the cups after donor interacts with it.
+table_cups<- table_modi_cups %>%
+  count(Subject, Behavior)
+
+# Seventh, we start with Cat Tower Toy
+data_first_cattowertoy <- data_behave[227:nrow(data_behave), ]
+
+data_cattowertoy_only <- data_first_cattowertoy 
+
+# Then, we can make a table about how each ferret touches cat tower toy  after donor touches the cat tower toy 
+
+table_modi_cattowertoy<- subset(data_cattowertoy_only, Subject %in% c('R1', 'R2', 'R3', 'R4') & Modifier.1 == 'Cat Tower Toy')
+
+# Table about the frequency of interaction the cat tower toy after donor interacts with it.
+table_cattowertoy<- table_modi_cattowertoy %>%
+  count(Subject, Behavior)
+
+
+# Besides, the object modifier, we can also do this for other ferrets
+
+f.first <- data_sub_donor[match(unique(data_sub_donor$Modifier.1), data_sub_donor$Modifier.1),]
+
+
+# First, we take R1
+data_first_R1 <- data_behave[114:nrow(data_behave), ]
+
+data_R1_only <- data_first_R1 
+
+# Then, we can make a table about how each ferret touches R1  after donor touches the R1
+
+table_modi_R1<- subset(data_R1_only, Subject %in% c('R2', 'R3', 'R4') & Modifier.1 == 'R1')
+
+# Table about the frequency of interaction the cat tower toy after donor interacts with it.
+table_R1 <- table_modi_R1 %>%
+  count(Subject, Behavior)
+
+
+# Second, we take R2
+data_first_R2 <- data_behave[192:nrow(data_behave), ]
+
+data_R2_only <- data_first_R2 
+
+# Then, we can make a table about how each ferret touches R2 after donor touches the R1
+
+table_modi_R2 <- subset(data_R2_only, Subject %in% c('R1', 'R3', 'R4') & Modifier.1 == 'R2')
+
+# Table about the frequency of interaction the cat tower toy after donor interacts with it.
+table_R2 <- table_modi_R2 %>%
+  count(Subject, Behavior)
+
+# Third, we take R3
+data_first_R3 <- data_behave[247:nrow(data_behave), ]
+
+data_R3_only <- data_first_R3
+
+# Then, we can make a table about how each ferret touches R3 after donor touches the R3
+
+table_modi_R3 <- subset(data_R3_only, Subject %in% c('R1', 'R2', 'R4') & Modifier.1 == 'R3')
+
+# Table about the frequency of interaction the cat tower toy after donor interacts with it.
+table_R3 <- table_modi_R3 %>%
+  count(Subject, Behavior)
+
+
+# Forth, we take R4
+data_first_R4 <- data_behave[51:nrow(data_behave), ]
+
+data_R4_only <- data_first_R4
+
+# Then, we can make a table about how each ferret touches R4 after donor touches the R4
+
+table_modi_R4 <- subset(data_R4_only, Subject %in% c('R1', 'R2', 'R3') & Modifier.1 == 'R4')
+
+# Table about the frequency of interaction the cat tower toy after donor interacts with it.
+table_R4 <- table_modi_R4 %>%
+  count(Subject, Behavior)
+
+
+# Since, we already know that R1 is the only ferret who gets infected
+# We can start to build a table that only involves 
+
 
 # Get the index of that first time interact other objects
-b.first <- data_sub_donor_object[match(unique(data_sub_donor_object$Behavior), data_sub_donor_object$Behavior),]
+# b.first <- data_sub_donor_object[match(unique(data_sub_donor_object$Behavior), data_sub_donor_object$Behavior),]
+
+
