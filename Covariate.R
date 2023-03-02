@@ -161,6 +161,39 @@ table_modi_cattowertoy<- subset(data_cattowertoy_only, Subject %in% c('R1', 'R2'
 table_cattowertoy<- table_modi_cattowertoy %>%
   count(Subject, Behavior)
 
+################################################################################################
+#### Make a table about how long each ferret touches a modifier after donor first touches it ###
+################################################################################################
+
+# Make a list of modifiers in the order based on `t.first`
+list.Modifiers = c("robot", "keys", "ball", "plush", "penwalls", "cups", "cattowertoy")
+
+for (i in 1:7){
+  # First, we get the name of the table whose name has the format: table_modi_Modifier (e.g. table_modi_robot)
+  table = paste0('table_modi_',list.Modifiers[i])
+  # Get the Subject column of the table 
+  subject = get(table)$Subject
+  
+  # Next, we make a table about when each ferret, excluded the donor, first touches keys after donor touches the keys
+  
+  #Create the name for the new table
+  new_table = paste0("table_modi_", list.Modifiers[i], "_first")  
+  #Make the new table 
+  assign(new_table, 
+         get(table)[match(unique(subject), subject),])   
+  #Add a column to the table which contains the time between 
+  TimeBtw <- get(new_table)[, 3] - t.first$Start_Time[i]
+  assign(new_table, cbind(get(new_table), TimeBtw))
+}
+
+# The for-loop above is essentially doing this for each modifier (tabke keys as example):
+# Make a table about when each ferret, excluded the donor, first touches keys after donor touches the keys
+# table_modi_keys_first <- table_modi_keys[match(unique(table_modi_keys$Subject), table_modi_keys$Subject),]
+
+# Add a column to the table which contains the time between 
+# table_modi_keys_first$TimeBtw <- table_modi_keys_first$End_Time - t.first$Start_Time[2]
+
+###########################################################################################
 
 # Besides, the object modifier, we can also do this for other ferrets
 
