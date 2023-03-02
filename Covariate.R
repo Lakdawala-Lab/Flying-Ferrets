@@ -174,7 +174,7 @@ for (i in 1:7){
   # Get the Subject column of the table 
   subject = get(table)$Subject
   
-  # Next, we make a table about when each ferret, excluded the donor, first touches keys after donor touches the keys
+  # Next, we make a table about when each ferret, excluded the donor, first touches a modifier after donor touches it
   
   #Create the name for the new table
   new_table = paste0("table_modi_", list.Modifiers[i], "_first")  
