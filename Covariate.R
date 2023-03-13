@@ -12,6 +12,22 @@ data_behave <- data_behave %>% dplyr::filter(!(Modifier.1==""))
 data_behave <- data_behave %>% dplyr::filter(!(Behavior==""))
 
 
+#Here we are trying to develop a function  to find face to face touching (start time interval within 3s)
+
+#We will use two pointer here
+
+#Pointer1: point at index n (n from 1 to nrow(df)), subtract subject and modifier, and start time
+#Pointer2: point at index n+1(n from 2 to nrow(df))
+
+#Logic: We will write a nested for loop here. pointer1 at index 1 and pointer2 scan through 
+#all the index after pointer1, for every index that pointer2 scan through, if the 
+#subject and modifier is in Donor, R1, and R2, and it is reverse of what pointer1 is pointing to
+#stop at that index, and subject the starttime_pointer2 - starttime_pointer1, if the interval is smaller than 3
+#continue scan until the next index matches the condition which interval is greater than 3, 
+#if the interval is greater than 3s, jump out of the loop and pointer1 goes down 1 index
+#For index that matches the condition, take the starttime of what pointer1 is pointing and endtime of what pointer2 at
+
+
 # First, we can make a table of frequency of different subjects in different behaviors
 table_1_behave <- data_behave %>%
   count(Subject ,Behavior)
