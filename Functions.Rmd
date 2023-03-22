@@ -70,27 +70,26 @@ We want to build a function to find the how many time Donor behaves to an object
 
 ```{r}
 filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject_2, subject_2_behave, modifier) {
-  # Find the first instance when subject_1 behaves with the modifier
-  first_instance <- which(data$Subject == subject_1 & data$Behavior == subject_1_behave & data$Modifier == modifier)[1]
-
-  # Filter the data to keep every data after the first instance
-  filtered_data <- data[first_instance:nrow(data),]
-
   # Initialize an empty data frame for the result
   result <- data.frame()
-
-  # Iterate through each row in the filtered_data
-  for (i in 1:nrow(filtered_data)) {
-    current_row <- filtered_data[i,]
+  
+  # Initialize a variable to track if subject_2's behavior was recorded since the last subject_1's behavior
+  recorded_subject_2 <- FALSE
+  
+  # Iterate through each row in the data
+  for (i in 1:nrow(data)) {
+    current_row <- data[i,]
     
-    # If the current row is an observation of subject_1, add it to the result
+    # If the current row is an observation of subject_1, add it to the result and reset recorded_subject_2
     if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
       result <- rbind(result, current_row)
+      recorded_subject_2 <- FALSE
     }
     
-    # If the current row is an observation of subject_2, add it to the result
-    if (current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier) {
+    # If the current row is an observation of subject_2, and it hasn't been recorded since the last subject_1's behavior, add it to the result and set recorded_subject_2 to TRUE
+    if (!recorded_subject_2 && current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier) {
       result <- rbind(result, current_row)
+      recorded_subject_2 <- TRUE
     }
   }
   
