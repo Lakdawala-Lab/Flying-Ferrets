@@ -3,13 +3,103 @@
 library(dplyr)
 
 # Read the data
-data = read.csv("Brown_cleaned.csv")
+data = read.csv("/Users/ruohaowu/Desktop/Ferret Project/Brown.Final.cleaned.csv")
 
 # Make a subdataset that only contains sub dataset of behaviors
 data_behave <- subset(data, Behavior %in% c('Bite/Chew', 'Chase', 'Dig', 'Lick/Groom', 'Snuggle', 'Touching') )
 data_behave <- data_behave %>% dplyr::filter(!(Subject==""))
 data_behave <- data_behave %>% dplyr::filter(!(Modifier.1==""))
 data_behave <- data_behave %>% dplyr::filter(!(Behavior==""))
+
+
+
+
+
+library(dplyr)
+
+
+# Define the function
+interaction_summary <- function(subject, modifier, behavior) {
+  # Filter the dataset based on the input parameters
+  filtered_data <- data_behave %>%
+    filter(Subject == subject,
+           Modifier.1 == modifier,
+           Behavior == behavior)
+  
+  # Calculate the number of interactions and the total duration
+  interaction_count <- nrow(filtered_data)
+  total_duration <- sum(filtered_data$Duration)
+  
+  # Create a data frame to store the results
+  results <- data.frame(
+    "Description" = paste(subject, 
+                          behavior,
+                          modifier),
+    "Number_of_interactions" = interaction_count,
+    "Total_duration" = total_duration,
+    stringsAsFactors = FALSE
+  )
+  
+  return(results)
+}
+
+
+subject <- "R3"
+modifier <- "Robot"
+behavior <- "Touching"
+result1 <- interaction_summary(subject, modifier, behavior)
+print(resul1)
+
+subject <- "R1"
+modifier <- "Plush"
+behavior <- "Touching"
+result3 <- interaction_summary(subject, modifier, behavior)
+print(resul3)
+
+subject <- "R3"
+modifier <- "Plush"
+behavior <- "Touching"
+result2 <- interaction_summary(subject, modifier, behavior)
+print(resul2)
+
+# Create an empty data frame to store all results
+all_results <- data.frame(
+  "Subject" = character(),
+  "Modifier" = character(),
+  "Behavior" = character(),
+  "Number_of_interactions" = integer(),
+  "Total_duration" = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Bind the results to the existing data frame
+all_results <- rbind(all_results, result1, result2)
+print(all_results)
+
+
+
+###############################Here we develop the face to face touching###############################################
+
+
+# Here select the data set with only touching behavior
+
+data_touch <- subset(data_behave, Behavior == "Touching")
+
+#Here we are trying to develop a function  to find face to face touching (start time interval within 3s)
+
+#We will use two pointer here
+
+#Pointer1: point at index n (n from 1 to nrow(df)), subtract subject and modifier, and start time
+#Pointer2: point at index n+1(n from 2 to nrow(df))
+
+#Logic: We will write a nested for loop here. pointer1 at index 1 and pointer2 scan through 
+#all the index after pointer1, for every index that pointer2 scan through, if the 
+#subject and modifier is in Donor, R1, and R2, and it is reverse of what pointer1 is pointing to
+#stop at that index, and subject the starttime_pointer2 - starttime_pointer1, if the interval is smaller than 3
+#continue scan until the next index matches the condition which interval is greater than 3, 
+#if the interval is greater than 3s, jump out of the loop and pointer1 goes down 1 index
+#For index that matches the condition, take the starttime of what pointer1 is pointing and endtime of what pointer2 at
+
 
 
 # First, we can make a table of frequency of different subjects in different behaviors
