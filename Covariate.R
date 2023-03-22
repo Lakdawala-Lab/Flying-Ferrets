@@ -12,6 +12,7 @@ data_behave <- data_behave %>% dplyr::filter(!(Modifier.1==""))
 data_behave <- data_behave %>% dplyr::filter(!(Behavior==""))
 
 
+<<<<<<< HEAD
 
 
 
@@ -85,6 +86,8 @@ print(all_results)
 
 data_touch <- subset(data_behave, Behavior == "Touching")
 
+=======
+>>>>>>> 92033cdd4715bc9c860dc971efdc349567106ff7
 #Here we are trying to develop a function  to find face to face touching (start time interval within 3s)
 
 #We will use two pointer here
@@ -101,7 +104,10 @@ data_touch <- subset(data_behave, Behavior == "Touching")
 #For index that matches the condition, take the starttime of what pointer1 is pointing and endtime of what pointer2 at
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 92033cdd4715bc9c860dc971efdc349567106ff7
 # First, we can make a table of frequency of different subjects in different behaviors
 table_1_behave <- data_behave %>%
   count(Subject ,Behavior)
