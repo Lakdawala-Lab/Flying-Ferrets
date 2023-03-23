@@ -76,6 +76,9 @@ filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject
   # Initialize a variable to track if subject_2's behavior was recorded since the last subject_1's behavior
   recorded_subject_2 <- FALSE
   
+  # Initialize a variable to track if the first occurrence of subject_1, subject_1_behave, modifier has been found
+  first_subject_1_found <- FALSE
+
   # Iterate through each row in the data
   for (i in 1:nrow(data)) {
     current_row <- data[i,]
@@ -84,10 +87,11 @@ filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject
     if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
       result <- rbind(result, current_row)
       recorded_subject_2 <- FALSE
+      first_subject_1_found <- TRUE
     }
     
     # If the current row is an observation of subject_2, and it hasn't been recorded since the last subject_1's behavior, add it to the result and set recorded_subject_2 to TRUE
-    if (!recorded_subject_2 && current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier) {
+    if (first_subject_1_found && !recorded_subject_2 && current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier) {
       result <- rbind(result, current_row)
       recorded_subject_2 <- TRUE
     }
@@ -96,11 +100,12 @@ filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject
   return(result)
 }
 
+
 ```
 
 ```{r}
 # Call the filter_function function
-result <- filter_function(split_data, "Donor", "Touching", "R1", "Touching", "Plush")
+result <- filter_function(data_behave, "Donor", "Touching", "R1", "Touching", "Ball")
 
 # Print the result
 print(result)
@@ -143,7 +148,7 @@ duration_function <- function(filtered_data, subject_1, subject_1_behave, subjec
 
 ```{r}
 # Call the duration_function function
-result <- duration_function(result, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Plush")
+result <- duration_function(result, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Ball")
 
 # Print the result
 print(result)
