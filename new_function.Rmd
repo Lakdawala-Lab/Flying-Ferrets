@@ -1,0 +1,190 @@
+---
+title: "Function"
+author: "Ruohao Wu"
+date: "2023-03-22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+
+# Read the data
+data = read.csv("Brown.Final.cleaned.csv")
+
+colnames(data)[colnames(data) == "X"] <- "Index"
+colnames(data)[colnames(data) == "Modifier.1"] <- "Modifier"
+# Remove the second last column
+data <- data[,-(ncol(data))]
+
+
+
+# Make a subdataset that only contains sub dataset of behaviors
+data_behave <- subset(data, Behavior %in% c('Bite/Chew', 'Chase', 'Dig', 'Lick/Groom', 'Snuggle', 'Touching') )
+data_behave <- data_behave %>% dplyr::filter(!(Subject==""))
+data_behave <- data_behave %>% dplyr::filter(!(Modifier==""))
+data_behave <- data_behave %>% dplyr::filter(!(Behavior==""))
+```
+
+
+
+```{r}
+split_joint_modifiers <- function(data) {
+  # Initialize an empty data frame for the result
+  df <- data.frame()
+
+  # Iterate through each row in the data
+  for (i in 1:nrow(data)) {
+    current_row <- data[i,]
+    
+    # Split the Modifier column by ","
+    modifiers <- strsplit(as.character(current_row$Modifier), split = ",")[[1]]
+    modifiers <- trimws(modifiers) # Remove any leading or trailing white spaces
+    
+    # Iterate through each modifier and create a separate row
+    for (modifier in modifiers) {
+      new_row <- current_row
+      new_row$Modifier <- modifier
+      df <- rbind(df, new_row)
+    }
+  }
+
+  return(df)
+}
+
+```
+
+```{r}
+# Call the split_joint_modifiers function
+split_data <- unique(split_joint_modifiers(data_behave))
+
+# Print the result
+print(split_data)
+```
+
+We want to build a function to find the how many time Donor behaves to an object
+
+
+```{r}
+filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject_2, subject_2_behave, modifier) {
+  # Initialize an empty data frame for the result
+  result <- data.frame()
+  
+  # Initialize a variable to track if subject_2's behavior was recorded since the last subject_1's behavior
+  recorded_subject_2 <- FALSE
+  
+  # Initialize a variable to track if the first occurrence of subject_1, subject_1_behave, modifier has been found
+  first_subject_1_found <- FALSE
+
+  # Iterate through each row in the data
+  for (i in 1:nrow(data)) {
+    current_row <- data[i,]
+    
+    # If the current row is an observation of subject_1, add it to the result and reset recorded_subject_2
+    if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
+      result <- rbind(result, current_row)
+      recorded_subject_2 <- FALSE
+      first_subject_1_found <- TRUE
+    }
+    
+    # If the current row is an observation of subject_2, and it hasn't been recorded since the last subject_1's behavior, add it to the result and set recorded_subject_2 to TRUE
+    if (first_subject_1_found && !recorded_subject_2 && current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier) {
+      result <- rbind(result, current_row)
+      recorded_subject_2 <- TRUE
+    }
+  }
+  
+  return(result)
+}
+
+
+```
+
+```{r}
+# Call the filter_function function
+prelim_result <- filter_function(data_behave, "Donor", "Touching", "R1", "Touching", "Cat Tower Toy")
+
+# Print the result
+print(prelim_result)
+```
+
+
+```{r}
+duration_function <- function(filtered_data, subject_1, subject_1_behave, subject_2, subject_2_behave, modifier) {
+  # Initialize a variable to store the end time of the previous subject_1 behavior
+  prev_subject_1_end_time <- NULL
+
+  # Initialize an empty data frame for the result
+  result <- data.frame()
+
+  # Iterate through each row in the filtered_data
+  for (i in 1:nrow(filtered_data)) {
+    current_row <- filtered_data[i,]
+    current_row$Synchronous <- F
+    # If the current row is an observation of subject_1, update the end time and set the interval duration to 0
+    if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
+      current_row$Interval_Duration <- 0
+      result <- rbind(result, current_row)
+      prev_subject_1_end_time <- current_row$End_Time
+    }
+    
+    # If the current row is an observation of subject_2, calculate the interval duration
+    if (current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier) {
+      current_row$Interval_Duration <- current_row$Start_Time - prev_subject_1_end_time
+      if (current_row$Interval_Duration < 0) {
+        current_row$Synchronous <- T
+        #cat("\nCURRENT ROW END TIME: ", current_row$End_Time)
+        #cat("\nPREV SUBJECT 1 END TIME: ", prev_subject_1_end_time)
+        #print(current_row)
+        if (current_row$End_Time > prev_subject_1_end_time) {
+          new_row <- current_row
+          new_row$Synchronous <- F
+          new_row$Start_Time <- prev_subject_1_end_time
+          current_row$End_Time <- prev_subject_1_end_time
+          current_row$Interval_Duration <- 0
+          result <- rbind(result, new_row)
+          #cat("HI THERE!  ", current_row)
+        }
+        #else {
+        #  current_row$Synchronous <- T
+        #}
+      }
+      result <- rbind(result, current_row)
+    }
+  }
+  
+  return(result)
+}
+```
+
+
+```{r}
+library(tidyverse)
+# Call the filter_function function
+prelim_result <- filter_function(split_data, "Donor", "Touching", "R1", "Touching", "Pen Walls")
+
+# Print the result
+print(prelim_result)
+
+
+# Call the duration_function function
+result <- duration_function(prelim_result, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Pen Walls") %>%
+  arrange(Start_Time)
+
+# Print the result
+print(result)
+```
+
+```{r}
+write.csv(result, "Donor_Touching_Pen_Walls_R1_Touching.csv")
+```
+
+```{r}
+data %>%
+  filter((Subject == "Donor") & Modifier == "Plush" & Behavior == "Touching")
+result
+```
+
