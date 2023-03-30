@@ -1,0 +1,234 @@
+---
+title: "Function"
+author: "Ruohao Wu"
+date: "2023-03-22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+
+# Read the data
+data = read.csv("Brown.Final.cleaned.csv")
+
+colnames(data)[colnames(data) == "X"] <- "Index"
+colnames(data)[colnames(data) == "Modifier.1"] <- "Modifier"
+# Remove the second last column
+data <- data[,-(ncol(data))]
+
+
+
+# Make a subdataset that only contains sub dataset of behaviors
+data_behave <- subset(data, Behavior %in% c('Bite/Chew', 'Chase', 'Dig', 'Lick/Groom', 'Snuggle', 'Touching') )
+data_behave <- data_behave %>% dplyr::filter(!(Subject==""))
+data_behave <- data_behave %>% dplyr::filter(!(Modifier==""))
+data_behave <- data_behave %>% dplyr::filter(!(Behavior==""))
+```
+
+
+
+```{r}
+split_joint_modifiers <- function(data) {
+  # Initialize an empty data frame for the result
+  df <- data.frame()
+
+  # Iterate through each row in the data
+  for (i in 1:nrow(data)) {
+    current_row <- data[i,]
+    
+    # Split the Modifier column by ","
+    modifiers <- strsplit(as.character(current_row$Modifier), split = ",")[[1]]
+    modifiers <- trimws(modifiers) # Remove any leading or trailing white spaces
+    
+    # Iterate through each modifier and create a separate row
+    for (modifier in modifiers) {
+      new_row <- current_row
+      new_row$Modifier <- modifier
+      df <- rbind(df, new_row)
+    }
+  }
+
+  return(df)
+}
+
+```
+
+```{r}
+############ SEAN UPDATE: FILTER UNIQUE ROWS
+
+# Call the split_joint_modifiers function
+split_data <- unique(split_joint_modifiers(data_behave))
+
+# Print the result
+print(split_data)
+```
+
+We want to build a function to find the how many time Donor behaves to an object
+
+
+
+```{r}
+filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject_2, subject_2_behave, modifier) {
+  # Initialize an empty data frame for the result
+  result <- data.frame()
+  
+  # Initialize a variable to track the last subject_1 interaction
+  last_subject_1 <- -1
+  
+  # Initialize a variable to track the next subject_1 interaction
+  next_subject_1 <- -1
+  
+  # Initialize a variable to track if subject_2's behavior was recorded since the last subject_1's behavior
+  recorded_subject_2 <- FALSE
+  
+  # Find the next subject_1 interaction
+  for (i in 1:nrow(data)) {
+    current_row <- data[i,]
+    if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
+      next_subject_1 <- i
+      break
+    }
+  }
+  
+  # Iterate through each row in the data
+  for (i in 1:nrow(data)) {
+    current_row <- data[i,]
+    indicator_value <- FALSE
+    
+    # If the current row is an observation of subject_1, add it to the result, update last_subject_1, and set the indicator value to TRUE
+    if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
+      indicator_value <- TRUE
+      last_subject_1 <- i
+      
+      # Update next_subject_1 to find the next subject_1 interaction
+      next_subject_1 <- -1
+      for (j in (i+1):nrow(data)) {
+        next_row <- data[j,]
+        if (next_row$Subject == subject_1 && next_row$Behavior == subject_1_behave && next_row$Modifier == modifier) {
+          next_subject_1 <- j
+          break
+        }
+      }
+      
+      recorded_subject_2 <- FALSE
+    }
+    
+    # If the current row is an observation of subject_2 and it has the same modifier, it occurred after the last subject_1 interaction, and last_subject_1 has been updated from its initial value
+    if (current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier && i > last_subject_1 && last_subject_1 != -1) {
+      # If it is the first subject_2 after subject_1, set the indicator value to TRUE
+      if (!recorded_subject_2) {
+        indicator_value <- TRUE
+        recorded_subject_2 <- TRUE
+      } 
+      # If the start_time of subject_2 is smaller than the start_time of the next subject_1 and the end_time of subject_2 is greater than the start_time of the next subject_1, set the indicator value to TRUE
+      else if (next_subject_1 != -1 && current_row$Start_Time < data[next_subject_1, "Start_Time"] && current_row$End_Time > data[next_subject_1, "Start_Time"]) {
+        indicator_value <- TRUE
+      }
+      
+      result <- rbind(result, cbind(current_row, indicator = indicator_value))
+    } else if (indicator_value) {
+      result <- rbind(result, cbind(current_row, indicator = indicator_value))
+    }
+  }
+
+  return(result)
+}
+
+```
+
+
+```{r}
+# Call the filter_function function
+result1 <- filter_function(split_data, "Donor", "Touching", "R1", "Touching", "Pen Walls")
+
+# Print the result
+print(result1)
+```
+
+
+```{r}
+filter_indicator_true <- function(data) {
+  # Filter the rows where the indicator column is TRUE
+  filtered_data <- data[data$indicator == TRUE, ]
+  
+  # Remove the indicator column from the filtered dataset
+  filtered_data$indicator <- NULL
+  
+  return(filtered_data)
+}
+
+```
+
+```{r}
+filtered_data <- filter_indicator_true(result1)
+filtered_data
+```
+
+
+```{r}
+duration_function <- function(filtered_data, subject_1, subject_1_behave, subject_2, subject_2_behave, modifier) {
+  # Initialize a variable to store the end time of the previous subject_1 behavior
+  prev_subject_1_end_time <- NULL
+
+  # Initialize an empty data frame for the result
+  result <- data.frame()
+
+  # Iterate through each row in the filtered_data
+  for (i in 1:nrow(filtered_data)) {
+    current_row <- filtered_data[i,]
+    
+    ### SEAN UPDATE: ADD SYNCHRONOUS INDICATOR
+    current_row$Synchronous <- F
+    
+    # If the current row is an observation of subject_1, update the end time and set the interval duration to 0
+    if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
+      current_row$Interval_Duration <- 0
+      result <- rbind(result, current_row)
+      prev_subject_1_end_time <- current_row$End_Time
+    }
+    
+    # If the current row is an observation of subject_2, calculate the interval duration
+    if (current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier) {
+      current_row$Interval_Duration <- current_row$Start_Time - prev_subject_1_end_time
+      if (current_row$Interval_Duration < 0 | current_row$Interval_Duration == 0) {
+        ### SEAN UPDATE: SET SYNCHRONOUS TO TRUE
+        current_row$Synchronous <- T
+        current_row$Interval_Duration <- 0
+        ### SEAN UPDATE: SPLIT OVERLAPPING INTERACTONS INTO 2 INTERACTIONS: 1 SYNCHRONOUS, 1 ASYNCHRONOUS
+        if (current_row$End_Time > prev_subject_1_end_time) {
+          new_row <- current_row
+          new_row$Synchronous <- F
+          new_row$Start_Time <- prev_subject_1_end_time
+          new_row$Duration <- new_row$End_Time - new_row$Start_Time
+          current_row$End_Time <- prev_subject_1_end_time
+          new_row$Interval_Duration <- 0
+          current_row$Duration <- current_row$End_Time - current_row$Start_Time
+          result <- rbind(result, new_row)
+        }
+      }
+      result <- rbind(result, current_row)
+    }
+  }
+  
+  return(result)
+}
+```
+
+
+```{r}
+# Call the duration_function function
+result <- duration_function(filtered_data, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Pen Walls")
+
+# Print the result
+print(result)
+```
+
+
+
+
+
+
