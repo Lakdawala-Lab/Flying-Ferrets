@@ -62,13 +62,14 @@ split_joint_modifiers <- function(data) {
 
 # Call the split_joint_modifiers function
 split_data <- unique(split_joint_modifiers(data_behave))
+# Call the split_joint_modifiers function
+split_data <- split_joint_modifiers(data_behave)
 
 # Print the result
 print(split_data)
 ```
 
 We want to build a function to find the how many time Donor behaves to an object
-
 
 
 ```{r}
@@ -152,7 +153,7 @@ print(result1)
 
 ```{r}
 filter_indicator_true <- function(data) {
-  # Filter the rows where the indicator column is TRUE
+  ## Filter the rows where the indicator column is TRUE
   filtered_data <- data[data$indicator == TRUE, ]
   
   # Remove the indicator column from the filtered dataset
@@ -180,10 +181,10 @@ duration_function <- function(filtered_data, subject_1, subject_1_behave, subjec
   # Iterate through each row in the filtered_data
   for (i in 1:nrow(filtered_data)) {
     current_row <- filtered_data[i,]
-    
+
     ### SEAN UPDATE: ADD SYNCHRONOUS INDICATOR
     current_row$Synchronous <- F
-    
+  
     # If the current row is an observation of subject_1, update the end time and set the interval duration to 0
     if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
       current_row$Interval_Duration <- 0
@@ -226,9 +227,4 @@ result <- duration_function(filtered_data, subject_1 = "Donor", subject_1_behave
 # Print the result
 print(result)
 ```
-
-
-
-
-
 

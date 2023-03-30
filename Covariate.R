@@ -3,7 +3,7 @@
 library(dplyr)
 
 # Read the data
-data = read.csv("Brown_cleaned.csv")
+data = read.csv("/Users/ruohaowu/Desktop/Ferret Project/Brown.Final.cleaned.csv")
 
 # Make a subdataset that only contains sub dataset of behaviors
 data_behave <- subset(data, Behavior %in% c('Bite/Chew', 'Chase', 'Dig', 'Lick/Groom', 'Snuggle', 'Touching') )
@@ -12,6 +12,102 @@ data_behave <- data_behave %>% dplyr::filter(!(Modifier.1==""))
 data_behave <- data_behave %>% dplyr::filter(!(Behavior==""))
 
 
+<<<<<<< HEAD
+
+
+
+library(dplyr)
+
+
+# Define the function
+interaction_summary <- function(subject, modifier, behavior) {
+  # Filter the dataset based on the input parameters
+  filtered_data <- data_behave %>%
+    filter(Subject == subject,
+           Modifier.1 == modifier,
+           Behavior == behavior)
+  
+  # Calculate the number of interactions and the total duration
+  interaction_count <- nrow(filtered_data)
+  total_duration <- sum(filtered_data$Duration)
+  
+  # Create a data frame to store the results
+  results <- data.frame(
+    "Description" = paste(subject, 
+                          behavior,
+                          modifier),
+    "Number_of_interactions" = interaction_count,
+    "Total_duration" = total_duration,
+    stringsAsFactors = FALSE
+  )
+  
+  return(results)
+}
+
+
+subject <- "R3"
+modifier <- "Robot"
+behavior <- "Touching"
+result1 <- interaction_summary(subject, modifier, behavior)
+print(resul1)
+
+subject <- "R1"
+modifier <- "Plush"
+behavior <- "Touching"
+result3 <- interaction_summary(subject, modifier, behavior)
+print(resul3)
+
+subject <- "R3"
+modifier <- "Plush"
+behavior <- "Touching"
+result2 <- interaction_summary(subject, modifier, behavior)
+print(resul2)
+
+# Create an empty data frame to store all results
+all_results <- data.frame(
+  "Subject" = character(),
+  "Modifier" = character(),
+  "Behavior" = character(),
+  "Number_of_interactions" = integer(),
+  "Total_duration" = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Bind the results to the existing data frame
+all_results <- rbind(all_results, result1, result2)
+print(all_results)
+
+
+
+###############################Here we develop the face to face touching###############################################
+
+
+# Here select the data set with only touching behavior
+
+data_touch <- subset(data_behave, Behavior == "Touching")
+
+=======
+>>>>>>> 92033cdd4715bc9c860dc971efdc349567106ff7
+#Here we are trying to develop a function  to find face to face touching (start time interval within 3s)
+
+#We will use two pointer here
+
+#Pointer1: point at index n (n from 1 to nrow(df)), subtract subject and modifier, and start time
+#Pointer2: point at index n+1(n from 2 to nrow(df))
+
+#Logic: We will write a nested for loop here. pointer1 at index 1 and pointer2 scan through 
+#all the index after pointer1, for every index that pointer2 scan through, if the 
+#subject and modifier is in Donor, R1, and R2, and it is reverse of what pointer1 is pointing to
+#stop at that index, and subject the starttime_pointer2 - starttime_pointer1, if the interval is smaller than 3
+#continue scan until the next index matches the condition which interval is greater than 3, 
+#if the interval is greater than 3s, jump out of the loop and pointer1 goes down 1 index
+#For index that matches the condition, take the starttime of what pointer1 is pointing and endtime of what pointer2 at
+
+
+<<<<<<< HEAD
+
+=======
+>>>>>>> 92033cdd4715bc9c860dc971efdc349567106ff7
 # First, we can make a table of frequency of different subjects in different behaviors
 table_1_behave <- data_behave %>%
   count(Subject ,Behavior)
@@ -161,6 +257,39 @@ table_modi_cattowertoy<- subset(data_cattowertoy_only, Subject %in% c('R1', 'R2'
 table_cattowertoy<- table_modi_cattowertoy %>%
   count(Subject, Behavior)
 
+################################################################################################
+#### Make a table about how long each ferret touches a modifier after donor first touches it ###
+################################################################################################
+
+# Make a list of modifiers in the order based on `t.first`
+list.Modifiers = c("robot", "keys", "ball", "plush", "penwalls", "cups", "cattowertoy")
+
+for (i in 1:7){
+  # First, we get the name of the table whose name has the format: table_modi_Modifier (e.g. table_modi_robot)
+  table = paste0('table_modi_',list.Modifiers[i])
+  # Get the Subject column of the table 
+  subject = get(table)$Subject
+  
+  # Next, we make a table about when each ferret, excluded the donor, first touches a modifier after donor touches it
+  
+  #Create the name for the new table
+  new_table = paste0("table_modi_", list.Modifiers[i], "_first")  
+  #Make the new table 
+  assign(new_table, 
+         get(table)[match(unique(subject), subject),])   
+  #Add a column to the table which contains the time between 
+  TimeBtw <- get(new_table)[, 3] - t.first$Start_Time[i]
+  assign(new_table, cbind(get(new_table), TimeBtw))
+}
+
+# The for-loop above is essentially doing this for each modifier (tabke keys as example):
+# Make a table about when each ferret, excluded the donor, first touches keys after donor touches the keys
+# table_modi_keys_first <- table_modi_keys[match(unique(table_modi_keys$Subject), table_modi_keys$Subject),]
+
+# Add a column to the table which contains the time between 
+# table_modi_keys_first$TimeBtw <- table_modi_keys_first$End_Time - t.first$Start_Time[2]
+
+###########################################################################################
 
 # Besides, the object modifier, we can also do this for other ferrets
 
