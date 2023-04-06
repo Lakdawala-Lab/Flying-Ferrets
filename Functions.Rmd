@@ -1,6 +1,6 @@
 ---
 title: "Function"
-author: "Ruohao Wu"
+author: "Ruohao Wu & Tinna X & Tinna H & Sean"
 date: "2023-03-22"
 output: pdf_document
 ---
