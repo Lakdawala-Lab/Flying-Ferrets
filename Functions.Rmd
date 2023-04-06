@@ -228,3 +228,63 @@ result <- duration_function(filtered_data, subject_1 = "Donor", subject_1_behave
 print(result)
 ```
 
+```{r}
+organize_result = function(result_data, subject_1, subject_1_behave, subject_2, subject_2_behave, modifier){
+  
+  # Add new columns d, e, b to result_data. Initialize the rows to be 0
+  result_data[c("d", "e", "b", "score")] = 0
+  
+  for (i in 1:nrow(result_data)) {
+    current_row <- result_data[i,]
+    
+    # If the current row is an observation of subject_1, obtain the duration associated with subject_1
+    if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
+
+      # Obtain the duration associated with subject_1, which will be stored under column "d" in subject_2's row
+      duration <- current_row$Duration 
+    }
+    
+    # If the current row is an observation of subject_2, calculate the interval duration
+    if (current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier) {
+      
+      result_data[i,]$d <- duration 
+      result_data[i,]$e <- current_row$Duration 
+      result_data[i,]$b <- current_row$Interval_Duration
+    }
+  }
+  
+  return(result_data)
+}
+```
+
+
+```{r}
+result_reordered <- organize_result(result, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Pen Walls")
+
+print(result_reordered)
+```
+
+```{r}
+# weighted function 
+compute_score <- function(alpha=1, beta=1, result_data){
+  for (i in 1:nrow(result_data)) {
+    current_row <- result_data[i,]
+    if (current_row$Subject != "Donor"){
+      d = current_row$d
+      e = current_row$e
+      b = current_row$b
+      # Weighted function w(e, b)
+      weight = exp(-alpha * b) * (1/(1+exp(-beta * e)))
+      result_data[i,]$score = (1/(1+exp(-d)))*weight
+    }
+  }
+  return(result_data)
+}
+
+```
+
+
+```{r}
+score = compute_score(1, 1, result_reordered)
+print(score)
+```
