@@ -211,6 +211,27 @@ duration_function <- function(filtered_data, subject_1, subject_1_behave, subjec
           result <- rbind(result, new_row)
         }
       }
+      else if (i > 1 && current_row$Subject == subject_2 && filtered_data[i-1,]$Subject == subject_2) {
+        new_row <- current_row
+        new_row$Synchronous <- T
+        new_row$Start_Time <- filtered_data[i+1,]$Start_Time
+        if (current_row$End_Time > filtered_data[i+1,]$End_Time) {
+          extra_row <- current_row
+          current_row$End_Time <- new_row$Start_Time
+          extra_row$Start_Time <- filtered_data[i+1,]$End_Time
+          new_row$End_Time <- extra_row$Start_Time
+          extra_row$Duration <- extra_row$End_Time - extra_row$Start_Time
+          extra_row$Interval_Duration <- 0
+          result <- rbind(result, extra_row)
+        } else {
+        current_row$End_Time <- new_row$Start_Time
+        }
+        current_row$Duration <- current_row$End_Time - current_row$Start_Time
+        new_row$Duration <- new_row$End_Time - new_row$Start_Time
+        new_row$Interval_Duration <- 0
+        current_row <- new_row
+        #result <- rbind(result, new_row)
+      } 
       result <- rbind(result, current_row)
     }
   }
@@ -278,6 +299,10 @@ compute_score <- function(alpha=1, beta=1, result_data){
       result_data[i,]$score = (1/(1+exp(-d)))*weight
     }
   }
+  
+  # Remove the rows of Subject = "Donor" 
+  result_data <- result_data[!result_data$Subject == "Donor", ]
+  
   return(result_data)
 }
 
