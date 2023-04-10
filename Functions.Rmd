@@ -278,6 +278,10 @@ compute_score <- function(alpha=1, beta=1, result_data){
       result_data[i,]$score = (1/(1+exp(-d)))*weight
     }
   }
+  
+  # Remove the rows of Subject = "Donor" 
+  result_data <- result_data[!result_data$Subject == "Donor", ]
+  
   return(result_data)
 }
 
