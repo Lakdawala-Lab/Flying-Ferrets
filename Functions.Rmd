@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 
 # Read the data
-data = read.csv("Brown.Final.cleaned.csv")
+data = read.csv("/Users/ruohaowu/Desktop/Ferret Project/Brown.Final.cleaned.csv")
 
 colnames(data)[colnames(data) == "X"] <- "Index"
 colnames(data)[colnames(data) == "Modifier.1"] <- "Modifier"
@@ -288,3 +288,163 @@ compute_score <- function(alpha=1, beta=1, result_data){
 score = compute_score(1, 1, result_reordered)
 print(score)
 ```
+
+
+
+
+
+
+
+
+#####################################################Loop#############################################################
+
+
+```{r}
+filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject_2, subject_2_behave, modifier) {
+  # Initialize an empty data frame for the result
+  result <- data.frame()
+  
+  # Initialize a variable to track the last subject_1 interaction
+  last_subject_1 <- -1
+  
+  # Initialize a variable to track the next subject_1 interaction
+  next_subject_1 <- -1
+  
+  # Initialize a variable to track if subject_2's behavior was recorded since the last subject_1's behavior
+  recorded_subject_2 <- FALSE
+  
+  # Find the next subject_1 interaction
+  for (i in 1:nrow(data)) {
+    current_row <- data[i,]
+    if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
+      next_subject_1 <- i
+      break
+    }
+  }
+  
+  # Iterate through each row in the data
+  for (i in 1:nrow(data)) {
+    current_row <- data[i,]
+    indicator_value <- FALSE
+    
+    # If the current row is an observation of subject_1, add it to the result, update last_subject_1, and set the indicator value to TRUE
+    if (current_row$Subject == subject_1 && current_row$Behavior == subject_1_behave && current_row$Modifier == modifier) {
+      indicator_value <- TRUE
+      last_subject_1 <- i
+      
+      # Update next_subject_1 to find the next subject_1 interaction
+      next_subject_1 <- -1
+      for (j in (i+1):nrow(data)) {
+        next_row <- data[j,]
+        if (complete.cases(next_row[, c("Subject", "Behavior", "Modifier")]) &&
+            next_row$Subject == subject_1 &&
+            next_row$Behavior == subject_1_behave &&
+            next_row$Modifier == modifier) {
+          next_subject_1 <- j
+          break
+        }
+      }
+      
+      recorded_subject_2 <- FALSE
+    }
+    
+    # If the current row is an observation of subject_2 and it has the same modifier, it occurred after the last subject_1 interaction, and last_subject_1 has been updated from its initial value
+    if (current_row$Subject == subject_2 && current_row$Behavior == subject_2_behave && current_row$Modifier == modifier && i > last_subject_1 && last_subject_1 != -1) {
+      # If it is the first subject_2 after subject_1, set the indicator value to TRUE
+      if (!recorded_subject_2) {
+        indicator_value <- TRUE
+        recorded_subject_2 <- TRUE
+      } 
+      # If the start_time of subject_2 is smaller than the start_time of the next subject_1 and the end_time of subject_2 is greater than the start_time of the next subject_1, set the indicator value to TRUE
+      else if (next_subject_1 != -1 && current_row$Start_Time < data[next_subject_1, "Start_Time"] && current_row$End_Time > data[next_subject_1, "Start_Time"]) {
+        indicator_value <- TRUE
+      }
+      
+      result <- rbind(result, cbind(current_row, indicator = indicator_value))
+    } else if (indicator_value) {
+      result <- rbind(result, cbind(current_row, indicator = indicator_value))
+    }
+  }
+
+  return(result)
+}
+
+```
+
+
+```{r}
+auto_process <- function(raw_data, subject_1 = "Donor") {
+  # Split joint modifiers
+  split_data <- split_joint_modifiers(raw_data)
+
+  # Remove rows with any NA in Subject, Behavior, or Modifier columns
+  split_data <- split_data[complete.cases(split_data[, c("Subject", "Behavior", "Modifier")]), ]
+
+  # Extract the unique behaviors, modifiers, and other subjects from the split_data
+  unique_behaviors <- unique(split_data$Behavior)
+  unique_modifiers <- unique(split_data$Modifier)
+  unique_subjects <- unique(split_data$Subject)
+  
+  # Remove the "Donor" from the unique_subjects list
+  unique_subjects <- unique_subjects[unique_subjects != subject_1]
+
+  # Initialize an empty data frame for the summary
+  summary_df <- data.frame()
+  
+  # Iterate through the unique behaviors of subject_1
+  for (behavior_1 in unique_behaviors) {
+    # Iterate through all unique behaviors, modifiers, and other subjects for subject_2
+    for (behavior_2 in unique_behaviors) {
+      for (modifier in unique_modifiers) {
+        for (subject_2 in unique_subjects) {
+          
+          # Filter the data
+          filtered_data <- filter_function(split_data, subject_1, behavior_1, subject_2, behavior_2, modifier)
+
+          # Check if the filtered_data is empty and skip the current iteration if so
+          if (nrow(filtered_data) == 0) {
+            next
+          }
+
+          # Calculate the interval duration
+          duration_data <- duration_function(filtered_data, subject_1, behavior_1, subject_2, behavior_2, modifier)
+
+          # Organize the result
+          result_reordered <- organize_result(duration_data, subject_1, behavior_1, subject_2, behavior_2, modifier)
+          
+          # Compute the score
+          score_data <- compute_score(1, 1, result_reordered)
+          
+          # Create the summary data frame
+          summary_row <- data.frame(
+            Subject = subject_2,
+            Behavior = paste(subject_1, behavior_1, modifier, subject_2, behavior_2),
+            Synchronous = F,
+            Score = sum(score_data[score_data$Subject == subject_2 & score_data$Synchronous == F, "score"])
+          )
+          
+          summary_row_synchronous <- data.frame(
+            Subject = subject_2,
+            Behavior = paste(subject_1, behavior_1, modifier, subject_2, behavior_2),
+            Synchronous = T,
+            Score = sum(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"])
+          )
+          
+          # Add the summary row to the summary_df
+          summary_df <- rbind(summary_df, summary_row, summary_row_synchronous)
+        }
+      }
+    }
+  }
+  
+  return(summary_df)
+}
+
+# Call the auto_process function with the raw_data
+summary_df <- auto_process(raw_data = data_behave)
+
+# Check the resulting summary dataframe
+head(summary_df)
+
+```
+
