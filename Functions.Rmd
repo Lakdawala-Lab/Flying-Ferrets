@@ -13,7 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 
 # Read the data
-data = read.csv("/Users/ruohaowu/Desktop/Ferret Project/Brown.Final.cleaned.csv")
+# data = read.csv("/Users/ruohaowu/Desktop/Ferret Project/Brown.Final.cleaned.csv")
+data = read.csv("/Users/huangyt_tina/Desktop/Capstone_Lakdawala Lab/Flying-Ferrets/csv files/Brown.Final.cleaned.csv")
 
 colnames(data)[colnames(data) == "X"] <- "Index"
 colnames(data)[colnames(data) == "Modifier.1"] <- "Modifier"
@@ -399,6 +400,137 @@ summary_df <- auto_process(raw_data = data_behave)
 
 # Check the resulting summary dataframe
 head(summary_df)
+
+```
+
+###################################################Test#############################################################
+
+
+```{r}
+auto_process <- function(raw_data, subject_1 = "Donor") {
+  # Split joint modifiers
+  split_data <- split_joint_modifiers(raw_data)
+
+  # Remove rows with any NA in Subject, Behavior, or Modifier columns
+  split_data <- split_data[complete.cases(split_data[, c("Subject", "Behavior", "Modifier")]), ]
+
+  # Extract the unique behaviors, modifiers, and other subjects from the split_data
+  unique_behaviors <- unique(split_data$Behavior)
+  unique_modifiers <- unique(split_data$Modifier)
+  unique_subjects <- unique(split_data$Subject)
+  
+  # Remove the "Donor" from the unique_subjects list
+  unique_subjects <- unique_subjects[unique_subjects != subject_1]
+
+  # Initialize an empty data frame for the summary
+  summary_df <- data.frame()
+  
+  # Iterate through the unique behaviors of subject_1
+  for (behavior_1 in unique_behaviors) {
+    # Iterate through all unique behaviors, modifiers, and other subjects for subject_2
+    for (behavior_2 in unique_behaviors) {
+      for (modifier in unique_modifiers) {
+        for (subject_2 in unique_subjects) {
+          
+          # Filter the data
+          filtered_data <- filter_function(split_data, subject_1, behavior_1, subject_2, behavior_2, modifier)
+
+          # Check if the filtered_data is empty and skip the current iteration if so
+          if (nrow(filtered_data) == 0) {
+            next
+          }
+
+          # Calculate the interval duration
+          duration_data <- duration_function(filtered_data, subject_1, behavior_1, subject_2, behavior_2, modifier)
+
+          # Organize the result
+          result_reordered <- organize_result(duration_data, subject_1, behavior_1, subject_2, behavior_2, modifier)
+          
+          # Compute the score
+          score_data <- compute_score(1, 1, result_reordered)
+          
+          # Create the summary data frame
+          summary_row <- data.frame(
+            Subject = subject_2,
+            Behavior = paste(subject_1, behavior_1, modifier, behavior_2),
+            Synchronous = F,
+            Score = sum(score_data[score_data$Subject == subject_2 & score_data$Synchronous == F, "score"]),
+            Duration = sum(score[which(score_data$Synchronous == F), "e"]),
+            Frequency = nrow(score[which(score_data$Synchronous == F), ])
+          )
+          
+          summary_row_synchronous <- data.frame(
+            Subject = subject_2,
+            Behavior = paste(subject_1, behavior_1, modifier, behavior_2),
+            Synchronous = T,
+            Score = sum(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"]),
+            Duration = sum(score[which(score_data$Synchronous == T), "e"]),
+            Frequency = nrow(score[which(score_data$Synchronous == T), ])
+          )
+          
+          # Add the summary row to the summary_df
+          summary_df <- rbind(summary_df, summary_row, summary_row_synchronous)
+        }
+      }
+    }
+  }
+  
+  return(summary_df)
+}
+
+# Call the auto_process function with the raw_data
+summary_df <- auto_process(raw_data = data_behave)
+
+# Check the resulting summary dataframe
+head(summary_df)
+
+```
+
+
+```{r}
+# Split summary_df by the Subject column
+grouped_df <- summary_df %>% 
+  # First group summary_df by Subject
+  group_by(Subject) %>%
+  # Then split by Subject
+  group_split()
+
+# Obtain a table for each recipient donor
+summary_df_r1 <- grouped_df[[1]]
+summary_df_r2 <- grouped_df[[2]]
+summary_df_r3 <- grouped_df[[3]]
+summary_df_r4 <- grouped_df[[4]]
+
+# Join the tables for recipients by Behavior and Synchronous
+summary_df_reorganized <- summary_df_r1 %>% 
+  full_join(summary_df_r2, by = join_by(Behavior, Synchronous)) %>%
+  full_join(summary_df_r3, by = join_by(Behavior, Synchronous)) %>%
+  full_join(summary_df_r4, by = join_by(Behavior, Synchronous))
+
+# Create the final table of scores
+final_df_score <- summary_df_reorganized %>%
+  # When joining the tables, full_join() rename each "Score" column 
+  # as "Score.x", "Score.y", "Score.x.x", "Score.y.y" respectively
+  # Select these columns for the final table of scores
+  select(Behavior, Score.x, Score.y, Score.x.x, Score.y.y)  %>% 
+  # Rename the columns of scores as "R1", "R2", "R3", R4"
+  rename(R1 = Score.x, R2 = Score.y, R3 = Score.x.x, R4 = Score.y.y)
+
+# Create the final table of duration
+final_df_duration <- summary_df_reorganized %>%
+  # Select the duration columns
+  select(Behavior, Duration.x, Duration.y, Duration.x.x, Duration.y.y)  %>% 
+  # Rename the columns of duration as "R1", "R2", "R3", R4"
+  rename(R1 = Duration.x, R2 = Duration.y, R3 = Duration.x.x, R4 = Duration.y.y)
+
+# Create the final table of frequency
+final_df_frequency <- summary_df_reorganized %>%
+  # Select these columns for the final table of frequency
+  select(Behavior, Frequency.x, Frequency.y, Frequency.x.x, Frequency.y.y)  %>% 
+  # Rename the columns of scores as "R1", "R2", "R3", R4"
+  rename(R1 = Frequency.x, R2 = Frequency.y, R3 = Frequency.x.x, R4 = Frequency.y.y)
+
+
 
 ```
 
