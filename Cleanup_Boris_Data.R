@@ -2,7 +2,7 @@
 library(dplyr)
 
 # Open the .csv file (Betsur)
-data = read.csv("Betsur.Exposure1.Take2.csv")
+data = read.csv("Penwalls_only.csv")
 
 # Remove the title rows (first 20 rows)
 data = data[-c(1:20), ]
@@ -47,7 +47,7 @@ data.cleaned <- data %>%
   # Order by Start_Time so that rows are ordered by the start of the event
   arrange(Start_Time)
 
-
+write.csv(data.cleaned, "cleaned_penwalls_only.csv")
 ##########################################
 # Test the code on Subject = Donors only #
 ##########################################

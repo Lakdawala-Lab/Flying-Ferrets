@@ -16,7 +16,9 @@ library(tidyr)
 # Read the data
 # data = read.csv("/Users/ruohaowu/Desktop/Ferret Project/Brown.Final.cleaned.csv")
 # data = read.csv("/Users/huangyt_tina/Desktop/Capstone_Lakdawala Lab/Flying-Ferrets/csv files/Brown.Final.cleaned.csv")
- data = read.csv("/Users/xuxiaonuo/Desktop/36726_statistical_practice/project/code/Flying-Ferrets/csv files/Brown.Final.cleaned.csv")
+# data = read.csv("/Users/xuxiaonuo/Desktop/36726_statistical_practice/project/code/Flying-Ferrets/csv files/Brown.Final.cleaned.csv")
+
+data = read.csv("cleaned_penwalls_only.csv")
  
 colnames(data)[colnames(data) == "X"] <- "Index"
 colnames(data)[colnames(data) == "Modifier.1"] <- "Modifier"
@@ -148,7 +150,7 @@ filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject
 
 ```{r}
 # Call the filter_function function
-result1 <- filter_function(split_data, "Donor", "Touching", "R1", "Touching", "Pen Walls")
+result1 <- filter_function(split_data, "Donor", "Touching", "R1", "Touching", "Panel O")
 
 # Print the result
 print(result1)
@@ -215,7 +217,7 @@ duration_function <- function(filtered_data, subject_1, subject_1_behave, subjec
           result <- rbind(result, new_row)
         }
       }
-      else if (i > 1 && current_row$Subject == subject_2 && filtered_data[i-1,]$Subject == subject_2) {
+      else if (i > 1 && current_row$Subject == subject_2 && filtered_data[i-1,]$Subject == subject_2 & i != nrow(filtered_data)) {
         new_row <- current_row
         new_row$Synchronous <- T
         new_row$Start_Time <- filtered_data[i+1,]$Start_Time
@@ -247,7 +249,7 @@ duration_function <- function(filtered_data, subject_1, subject_1_behave, subjec
 
 ```{r}
 # Call the duration_function function
-result <- duration_function(filtered_data, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Pen Walls")
+result <- duration_function(filtered_data, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Panel O")
 
 # Print the result
 print(result)
@@ -284,7 +286,7 @@ organize_result = function(result_data, subject_1, subject_1_behave, subject_2, 
 
 
 ```{r}
-result_reordered <- organize_result(result, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Pen Walls")
+result_reordered <- organize_result(result, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Panel O")
 
 print(result_reordered)
 ```
@@ -314,8 +316,14 @@ compute_score <- function(alpha=1, beta=1, result_data){
 
 
 ```{r}
-score = compute_score(1, 1, result_reordered)
+score_data = compute_score(1, 1, result_reordered)
 print(score)
+
+sum(score_data[score_data$Subject == "R1" & score_data$Synchronous == F, "score"])
+
+nrow(score_data[which(score_data$Synchronous == T), ])
+
+sum(score_data[score_data$Subject == "R1" & score_data$Synchronous== T, "score"])
 ```
 
 
@@ -455,6 +463,12 @@ auto_process <- function(raw_data, subject_1 = "Donor") {
           # Compute the score
           score_data <- compute_score(1, 1, result_reordered)
           
+          #if(subject_2 == "R1" & modifier == "Panel O"){
+          #  print(nrow(score_data[which(score_data$Synchronous == F), ]))
+          #  return(duration_data)
+          #  print(nrow(score_data[which(score_data$Synchronous == T), ]))
+          #}
+          
           # Create the summary data frame
           if (nrow(score_data) == 0){
             Max_Score_Async = 0 
@@ -502,6 +516,10 @@ summary_df <- auto_process(raw_data = data_behave)
 # Check the resulting summary dataframe
 head(summary_df)
 
+```
+
+```{r}
+summary_df
 ```
 
 
@@ -553,3 +571,10 @@ final_df_frequency <- summary_df_reorganized %>%
 ```
 
 
+```{r}
+final_df_score
+
+final_df_frequency
+
+final_df_max_score
+```
