@@ -15,10 +15,10 @@ library(tidyr)
 
 # Read the data
 # data = read.csv("/Users/ruohaowu/Desktop/Ferret Project/Brown.Final.cleaned.csv")
-# data = read.csv("/Users/huangyt_tina/Desktop/Capstone_Lakdawala Lab/Flying-Ferrets/csv files/Brown.Final.cleaned.csv")
+data = read.csv("/Users/huangyt_tina/Desktop/Capstone_Lakdawala Lab/Flying-Ferrets/csv files/Brown.Final.cleaned.csv")
 # data = read.csv("/Users/xuxiaonuo/Desktop/36726_statistical_practice/project/code/Flying-Ferrets/csv files/Brown.Final.cleaned.csv")
 
-data = read.csv("cleaned_penwalls_only.csv")
+# data = read.csv("cleaned_penwalls_only.csv")
  
 colnames(data)[colnames(data) == "X"] <- "Index"
 colnames(data)[colnames(data) == "Modifier.1"] <- "Modifier"
@@ -248,11 +248,11 @@ duration_function <- function(filtered_data, subject_1, subject_1_behave, subjec
 
 
 ```{r}
-# Call the duration_function function
-result <- duration_function(filtered_data, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Panel O")
-
-# Print the result
-print(result)
+# # Call the duration_function function
+# result <- duration_function(filtered_data, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Panel O")
+# 
+# # Print the result
+# print(result)
 ```
 
 ```{r}
@@ -286,9 +286,9 @@ organize_result = function(result_data, subject_1, subject_1_behave, subject_2, 
 
 
 ```{r}
-result_reordered <- organize_result(result, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Panel O")
-
-print(result_reordered)
+# result_reordered <- organize_result(result, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Panel O")
+# 
+# print(result_reordered)
 ```
 
 ```{r}
@@ -316,7 +316,7 @@ compute_score <- function(alpha=1, beta=1, result_data){
 
 
 ```{r}
-score_data = compute_score(1, 1, result_reordered)
+# score_data = compute_score(1, 1, result_reordered)
 #print(score)
 
 #sum(score_data[score_data$Subject == "R1" & score_data$Synchronous == F, "score"])
@@ -412,7 +412,7 @@ head(summary_df)
 ###################################################Test#############################################################
 
 
-```{r}
+```{r, warning=FALSE}
 auto_process <- function(raw_data, subject_1 = "Donor") {
   # Split joint modifiers
   split_data <- split_joint_modifiers(raw_data)
@@ -462,23 +462,29 @@ auto_process <- function(raw_data, subject_1 = "Donor") {
           
           # Compute the score
           score_data <- compute_score(1, 1, result_reordered)
-          
-          if(subject_2 == "R1" & modifier == "Panel O"){
-            print(nrow(score_data[which(score_data$Synchronous == F), ]))
-            return(duration_data)
-            print(nrow(score_data[which(score_data$Synchronous == T), ]))
-          }
 
           # Create the summary data frame
+
           if (nrow(score_data) == 0){
              Max_Score_Async = 0
-             Max_Score_Sync = 0
+              Max_Score_Sync = 0
           } else {
-             Max_Score_Async = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == F, "score"])
-             Max_Score_Sync = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"])
+              Max_Score_Async = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == F, "score"])
+              Max_Score_Sync = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"])
           }
           
-      
+          # if (nrow(score_data) == 0){
+          #    Max_Score_Async = 0
+          #    Max_Score_Sync = 0
+          # } else {
+          #   Max_Score_Async = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == F, "score"])
+          #   if (is.null(nrow(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"]))){ 
+          #     Max_Score_Sync = 0
+          #   } else {
+          #     Max_Score_Sync = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"])
+          #   }
+          # }
+
           summary_row <- data.frame(
             Subject = subject_2,
             Behavior_Subject1 = behavior_1,
@@ -508,11 +514,16 @@ auto_process <- function(raw_data, subject_1 = "Donor") {
     }
   }
   
+  # Handle -inf 
+  summary_df = do.call(data.frame, lapply(summary_df, function(x) replace(x, is.infinite(x), 0)))
   return(summary_df)
 }
 
 # Call the auto_process function with the raw_data
-summary_df <- auto_process(raw_data = data_behave)
+summary_df <- auto_process(raw_data = data_behave) %>%
+ rename(Donor_Behavior = Behavior_Subject1, Recipient_Behavior = Behavior_Subject2)
+# summary_df <- summary_df %>% rename(Donor_Behavior = Behavior_Subject1, Recipient_Behavior = Behavior_Subject2)
+
 
 # Check the resulting summary dataframe
 head(summary_df)
@@ -540,30 +551,30 @@ summary_df_r4 <- grouped_df[[4]]
 
 # Join the tables for recipients by Behavior and Synchronous
 summary_df_reorganized <- summary_df_r1 %>% 
-  full_join(summary_df_r2, by = c("Behavior_Subject1", "Behavior_Subject2", "Modifier", "Synchronous")) %>%
-  full_join(summary_df_r3, by = c("Behavior_Subject1", "Behavior_Subject2", "Modifier", "Synchronous")) %>%
-  full_join(summary_df_r4, by = c("Behavior_Subject1", "Behavior_Subject2", "Modifier", "Synchronous"))
+  full_join(summary_df_r2, by = c("Donor_Behavior", "Recipient_Behavior", "Modifier", "Synchronous")) %>%
+  full_join(summary_df_r3, by = c("Donor_Behavior", "Recipient_Behavior", "Modifier", "Synchronous")) %>%
+  full_join(summary_df_r4, by = c("Donor_Behavior", "Recipient_Behavior", "Modifier", "Synchronous"))
 
 # Create the final table of scores
 final_df_score <- summary_df_reorganized %>%
   # When joining the tables, full_join() rename each "Score" column 
   # as "Score.x", "Score.y", "Score.x.x", "Score.y.y" respectively
   # Select these columns for the final table of scores
-  select(Behavior_Subject1, Behavior_Subject2, Modifier, Synchronous, Score.x, Score.y, Score.x.x, Score.y.y)  %>% 
+  select(Donor_Behavior, Recipient_Behavior, Modifier, Synchronous, Score.x, Score.y, Score.x.x, Score.y.y)  %>% 
   # Rename the columns of scores as "R1", "R2", "R3", R4"
   rename(R1 = Score.x, R2 = Score.y, R3 = Score.x.x, R4 = Score.y.y)
 
 # Create the final table of max score
-final_df_max_score<- summary_df_reorganized %>%
+final_df_max_score <- summary_df_reorganized %>%
   # Select the max score columns
-  select(Behavior_Subject1, Behavior_Subject2, Modifier, Synchronous, Max_Score.x, Max_Score.y, Max_Score.x.x, Max_Score.y.y)  %>% 
+  select(Donor_Behavior, Recipient_Behavior, Modifier, Synchronous, Max_Score.x, Max_Score.y, Max_Score.x.x, Max_Score.y.y)  %>% 
   # Rename the columns of max score as "R1", "R2", "R3", R4"
   rename(R1 = Max_Score.x, R2 = Max_Score.y, R3 = Max_Score.x.x, R4 = Max_Score.y.y)
 
 # Create the final table of frequency
 final_df_frequency <- summary_df_reorganized %>%
   # Select these columns for the final table of frequency
-  select(Behavior_Subject1, Behavior_Subject2, Modifier, Synchronous, Frequency.x, Frequency.y, Frequency.x.x, Frequency.y.y)  %>% 
+  select(Donor_Behavior, Recipient_Behavior, Modifier, Synchronous, Frequency.x, Frequency.y, Frequency.x.x, Frequency.y.y)  %>% 
   # Rename the columns of scores as "R1", "R2", "R3", R4"
   rename(R1 = Frequency.x, R2 = Frequency.y, R3 = Frequency.x.x, R4 = Frequency.y.y)
 
