@@ -1,7 +1,7 @@
 ---
 title: "Function"
-author: "Ruohao Wu & Tinna X & Tinna H & Sean"
-date: "2023-03-22"
+author: "Ruohao Wu & Xiaonuo(Tinna) Xu & Yutian(Tina) Huang & Sean Tavares"
+date: "2023-05-04"
 output: pdf_document
 ---
 
@@ -10,15 +10,69 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+# Import libraries
 library(dplyr)
 library(tidyr)
+library(ggplot2)
+```
+
+
+```{r}
+# Open the .csv file exported from Boris
+data = read.csv("csv files/Brown.Final.cleaned.csv")
+
+# Remove the title rows (first 20 rows)
+data = data[-c(1:20), ]
+
+# Set the first row of data to be the header/column names of the dataframe
+column.names = data[1,]
+names(data) = column.names
+data = data[-1, ]  # Remove the first row which contains the column names 
+
+# For computation of duration, convert the datatype of `Time` from chr to numeric 
+data <- data %>% mutate(Time = as.numeric(Time)) 
+
+# Find and store rows with missing values for `Modifier 1`
+data.problems <- data %>% filter(`Modifier 1` == "")
+
+##################
+# Clean the data #
+##################
+
+# Clean the data  
+data.cleaned <- data %>%
+  # Organize the data by columns that can uniquely identify a ferret's behavior 
+  arrange(Subject, Behavior, `Behavioral category`, `Modifier 1`) %>% 
+  # Add row numbers (to assist following computation)
+  mutate(row_id=row_number()) %>% 
+  # Group by every 2 rows (START, STOP)
+  group_by(grp = as.integer(gl(n(), 2 , n()))) %>%
+  # Take the difference in Time of every two rows to compute duration
+  mutate(Duration = round(diff(Time), 3),
+         Comment = paste(Comment)) %>% 
+  # This also takes the difference in Time but drops columns 
+  # summarize(Duration = diff(Time)) %>% 
+  # Only keep the rows with Status = START (remove redundant rows)
+  filter(Status == "START") %>%
+  # Add Start Time and End Times
+  mutate(Start_Time = Time,
+         End_Time = Time + Duration) %>%
+  # Remove Column that tracks Groups
+  subset(select = -c(grp)) %>%
+  # Select only relevant remaining columns
+  select(c("Start_Time", "End_Time", "Duration", "Subject", "Behavior", "Behavioral category", "Modifier 1", "Comment")) %>%
+  # Order by Start_Time so that rows are ordered by the start of the event
+  arrange(Start_Time)
+
+# this is the final cleaned csv used for creating exposure scores
+write.csv(data.cleaned, "Cleaned_output.csv")
+```
+
+```{r}
 
 # Read the data
-# data = read.csv("/Users/ruohaowu/Desktop/Ferret Project/Brown.Final.cleaned.csv")
-data = read.csv("/Users/huangyt_tina/Desktop/Capstone_Lakdawala Lab/Flying-Ferrets/csv files/Brown.Final.cleaned.csv")
-# data = read.csv("/Users/xuxiaonuo/Desktop/36726_statistical_practice/project/code/Flying-Ferrets/csv files/Brown.Final.cleaned.csv")
-
-# data = read.csv("cleaned_penwalls_only.csv")
+# data = read.csv("Cleaned_output.csv")
+data = data.cleaned
  
 colnames(data)[colnames(data) == "X"] <- "Index"
 colnames(data)[colnames(data) == "Modifier.1"] <- "Modifier"
@@ -28,6 +82,7 @@ data <- data[,-(ncol(data))]
 
 
 # Make a subdataset that only contains sub dataset of behaviors
+# These behaviors are based on the current data files, the line need to be modified if any behaviors are added in the future 
 data_behave <- subset(data, Behavior %in% c('Bite/Chew', 'Chase', 'Dig', 'Lick/Groom', 'Snuggle', 'Touching') )
 data_behave <- data_behave %>% dplyr::filter(!(Subject==""))
 data_behave <- data_behave %>% dplyr::filter(!(Modifier==""))
@@ -37,6 +92,7 @@ data_behave <- data_behave %>% dplyr::filter(!(Behavior==""))
 
 
 ```{r}
+# Separate joint modifiers
 split_joint_modifiers <- function(data) {
   # Initialize an empty data frame for the result
   df <- data.frame()
@@ -63,21 +119,21 @@ split_joint_modifiers <- function(data) {
 ```
 
 ```{r}
-############ SEAN UPDATE: FILTER UNIQUE ROWS
+# FILTER UNIQUE ROWS
 
 # Call the split_joint_modifiers function
 split_data <- unique(split_joint_modifiers(data_behave))
 # Call the split_joint_modifiers function
 split_data <- split_joint_modifiers(data_behave)
 
-# Print the result
-print(split_data)
 ```
 
 We want to build a function to find the how many time Donor behaves to an object
 
 
 ```{r}
+# Filter out datasets given subject_1 subject_1_behave, subject_2, subject_2_behave, modifier
+# Default: subject_1 = "Donor"
 filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject_2, subject_2_behave, modifier) {
   # Initialize an empty data frame for the result
   result <- data.frame()
@@ -149,15 +205,8 @@ filter_function <- function(data, subject_1 = "Donor", subject_1_behave, subject
 
 
 ```{r}
-# Call the filter_function function
-result1 <- filter_function(split_data, "Donor", "Touching", "R1", "Touching", "Panel O")
+# Helper function for synchronous and asynchronous events 
 
-# Print the result
-print(result1)
-```
-
-
-```{r}
 filter_indicator_true <- function(data) {
   ## Filter the rows where the indicator column is TRUE
   filtered_data <- data[data$indicator == TRUE, ]
@@ -170,13 +219,9 @@ filter_indicator_true <- function(data) {
 
 ```
 
-```{r}
-filtered_data <- filter_indicator_true(result1)
-filtered_data
-```
-
 
 ```{r}
+# Calculate the duration of interaction times (End_time - Start_time)
 duration_function <- function(filtered_data, subject_1, subject_1_behave, subject_2, subject_2_behave, modifier) {
   # Initialize a variable to store the end time of the previous subject_1 behavior
   prev_subject_1_end_time <- NULL
@@ -248,14 +293,7 @@ duration_function <- function(filtered_data, subject_1, subject_1_behave, subjec
 
 
 ```{r}
-# # Call the duration_function function
-# result <- duration_function(filtered_data, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Panel O")
-# 
-# # Print the result
-# print(result)
-```
-
-```{r}
+# Added the durations columns for d, e, and b
 organize_result = function(result_data, subject_1, subject_1_behave, subject_2, subject_2_behave, modifier){
   
   # Add new columns d, e, b to result_data. Initialize the rows to be 0
@@ -286,13 +324,7 @@ organize_result = function(result_data, subject_1, subject_1_behave, subject_2, 
 
 
 ```{r}
-# result_reordered <- organize_result(result, subject_1 = "Donor", subject_1_behave = "Touching", subject_2 = "R1", subject_2_behave = "Touching", modifier = "Panel O")
-# 
-# print(result_reordered)
-```
-
-```{r}
-# weighted function 
+# Weighted function 
 compute_score <- function(alpha=1, beta=1, result_data){
   for (i in 1:nrow(result_data)) {
     current_row <- result_data[i,]
@@ -315,101 +347,7 @@ compute_score <- function(alpha=1, beta=1, result_data){
 ```
 
 
-```{r}
-# score_data = compute_score(1, 1, result_reordered)
-#print(score)
-
-#sum(score_data[score_data$Subject == "R1" & score_data$Synchronous == F, "score"])
-
-#nrow(score_data[which(score_data$Synchronous == T), ])
-
-#sum(score_data[score_data$Subject == "R1" & score_data$Synchronous== T, "score"])
-```
-
-
-#####################################################Loop#############################################################
-
-<!-- 
-
-```{r}
-auto_process <- function(raw_data, subject_1 = "Donor") {
-  # Split joint modifiers
-  split_data <- split_joint_modifiers(raw_data)
-
-  # Remove rows with any NA in Subject, Behavior, or Modifier columns
-  split_data <- split_data[complete.cases(split_data[, c("Subject", "Behavior", "Modifier")]), ]
-
-  # Extract the unique behaviors, modifiers, and other subjects from the split_data
-  unique_behaviors <- unique(split_data$Behavior)
-  unique_modifiers <- unique(split_data$Modifier)
-  unique_subjects <- unique(split_data$Subject)
-  
-  # Remove the "Donor" from the unique_subjects list
-  unique_subjects <- unique_subjects[unique_subjects != subject_1]
-
-  # Initialize an empty data frame for the summary
-  summary_df <- data.frame()
-  
-  # Iterate through the unique behaviors of subject_1
-  for (behavior_1 in unique_behaviors) {
-    # Iterate through all unique behaviors, modifiers, and other subjects for subject_2
-    for (behavior_2 in unique_behaviors) {
-      for (modifier in unique_modifiers) {
-        for (subject_2 in unique_subjects) {
-          
-          # Filter the data
-          filtered_data <- filter_function(split_data, subject_1, behavior_1, subject_2, behavior_2, modifier)
-
-          # Check if the filtered_data is empty and skip the current iteration if so
-          if (nrow(filtered_data) == 0) {
-            next
-          }
-
-          # Calculate the interval duration
-          duration_data <- duration_function(filtered_data, subject_1, behavior_1, subject_2, behavior_2, modifier)
-
-          # Organize the result
-          result_reordered <- organize_result(duration_data, subject_1, behavior_1, subject_2, behavior_2, modifier)
-          
-          # Compute the score
-          score_data <- compute_score(1, 1, result_reordered)
-          
-          # Create the summary data frame
-          summary_row <- data.frame(
-            Subject = subject_2,
-            Behavior = paste(subject_1, behavior_1, modifier, subject_2, behavior_2),
-            Synchronous = F,
-            Score = sum(score_data[score_data$Subject == subject_2 & score_data$Synchronous == F, "score"])
-          )
-          
-          summary_row_synchronous <- data.frame(
-            Subject = subject_2,
-            Behavior = paste(subject_1, behavior_1, modifier, subject_2, behavior_2),
-            Synchronous = T,
-            Score = sum(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"])
-          )
-          
-          # Add the summary row to the summary_df
-          summary_df <- rbind(summary_df, summary_row, summary_row_synchronous)
-        }
-      }
-    }
-  }
-  
-  return(summary_df)
-}
-
-# Call the auto_process function with the raw_data
-summary_df <- auto_process(raw_data = data_behave)
-
-# Check the resulting summary dataframe
-head(summary_df)
-
-```
-
--->
-
-###################################################Test#############################################################
+##################################################### AUTO PROCESS ############################################################
 
 
 ```{r, warning=FALSE}
@@ -472,18 +410,6 @@ auto_process <- function(raw_data, subject_1 = "Donor") {
               Max_Score_Async = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == F, "score"])
               Max_Score_Sync = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"])
           }
-          
-          # if (nrow(score_data) == 0){
-          #    Max_Score_Async = 0
-          #    Max_Score_Sync = 0
-          # } else {
-          #   Max_Score_Async = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == F, "score"])
-          #   if (is.null(nrow(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"]))){ 
-          #     Max_Score_Sync = 0
-          #   } else {
-          #     Max_Score_Sync = max(score_data[score_data$Subject == subject_2 & score_data$Synchronous == T, "score"])
-          #   }
-          # }
 
           summary_row <- data.frame(
             Subject = subject_2,
@@ -524,18 +450,12 @@ summary_df <- auto_process(raw_data = data_behave) %>%
  rename(Donor_Behavior = Behavior_Subject1, Recipient_Behavior = Behavior_Subject2)
 # summary_df <- summary_df %>% rename(Donor_Behavior = Behavior_Subject1, Recipient_Behavior = Behavior_Subject2)
 
-
-# Check the resulting summary dataframe
-head(summary_df)
-
-```
-
-```{r}
-summary_df
 ```
 
 
 ```{r}
+# Create the output tables for score, max_score and frequency
+
 # Split summary_df by the Subject column
 grouped_df <- summary_df %>% 
   # First group summary_df by Subject
@@ -583,20 +503,8 @@ final_df_frequency <- summary_df_reorganized %>%
 ```
 
 
-```{r}
-final_df_score
-
-final_df_frequency
-
-final_df_max_score
-```
-
-
 
 ```{r}
-# Load required libraries
-# library(dplyr)
-
 # Function to find the counts of subjects having the highest value
 highest_value_counts <- function(df) {
   last_four_cols <- tail(names(df), 4)
@@ -614,21 +522,16 @@ highest_value_counts <- function(df) {
 
 # Call the function
 result_score <- highest_value_counts(final_df_score)
-print(result_score)
 
 result_max <- highest_value_counts(final_df_max_score)
-print(result_max)
 
 result_fre <- highest_value_counts(final_df_frequency)
-print(result_fre)
 
 
 ```
 
 
 ```{r, fig.width=8pt}
-library(ggplot2)
-library(tidyr)
 
 # Transform the result dataframe to a long format
 long_result <- result_score %>%
