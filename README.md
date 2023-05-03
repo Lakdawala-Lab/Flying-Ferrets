@@ -12,7 +12,7 @@ The intuition of this script is to design a auto-script such that user would onl
 # Run the Script
 
 1. Download the Function.Rmd file on your local computer, it is the best the file is put in the same file as where the data source is stored
-2. Open the file, and load the data source (simply put the path name of the file that need to be runned)
+2. Open the file, and load the data source (simply put the path name of the file that need to be run)
 3. Run all the function in the script until the end, the file would produce bunch of objects, variables, and files, please take a look at summary_df1, summary_df2, and summary_df3
 4. There should also be three new produced csv file under the same directory as where the script is located
 5. Take a look at the output, and decide how to use it
