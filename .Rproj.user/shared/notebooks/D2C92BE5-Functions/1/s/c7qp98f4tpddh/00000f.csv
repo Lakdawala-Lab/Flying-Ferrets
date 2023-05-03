@@ -1,0 +1,36 @@
+"0","library(dplyr)"
+"2","
+Attaching package: ‘dplyr’
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+"
+"0","library(tidyr)"
+"0",""
+"0","# Read the data"
+"0","# data = read.csv(""/Users/ruohaowu/Desktop/Ferret Project/Brown.Final.cleaned.csv"")"
+"0","data = read.csv(""/Users/huangyt_tina/Desktop/Capstone_Lakdawala Lab/Flying-Ferrets/csv files/Brown.Final.cleaned.csv"")"
+"0","# data = read.csv(""/Users/xuxiaonuo/Desktop/36726_statistical_practice/project/code/Flying-Ferrets/csv files/Brown.Final.cleaned.csv"")"
+"0",""
+"0","# data = read.csv(""cleaned_penwalls_only.csv"")"
+"0"," "
+"0","colnames(data)[colnames(data) == ""X""] <- ""Index"""
+"0","colnames(data)[colnames(data) == ""Modifier.1""] <- ""Modifier"""
+"0","# Remove the second last column"
+"0","data <- data[,-(ncol(data))]"
+"0",""
+"0",""
+"0",""
+"0","# Make a subdataset that only contains sub dataset of behaviors"
+"0","data_behave <- subset(data, Behavior %in% c('Bite/Chew', 'Chase', 'Dig', 'Lick/Groom', 'Snuggle', 'Touching') )"
+"0","data_behave <- data_behave %>% dplyr::filter(!(Subject==""""))"
+"0","data_behave <- data_behave %>% dplyr::filter(!(Modifier==""""))"
+"0","data_behave <- data_behave %>% dplyr::filter(!(Behavior==""""))"

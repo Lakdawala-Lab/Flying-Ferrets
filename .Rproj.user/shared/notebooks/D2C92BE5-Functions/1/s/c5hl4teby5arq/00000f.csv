@@ -1,0 +1,5 @@
+"0","# Call the filter_function function"
+"0","result1 <- filter_function(split_data, ""Donor"", ""Touching"", ""R1"", ""Touching"", ""Panel O"")"
+"0",""
+"0","# Print the result"
+"0","print(result1)"

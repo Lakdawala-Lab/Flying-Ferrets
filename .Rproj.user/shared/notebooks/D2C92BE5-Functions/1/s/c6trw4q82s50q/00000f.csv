@@ -1,0 +1,8 @@
+"0","# score_data = compute_score(1, 1, result_reordered)"
+"0","#print(score)"
+"0",""
+"0","#sum(score_data[score_data$Subject == ""R1"" & score_data$Synchronous == F, ""score""])"
+"0",""
+"0","#nrow(score_data[which(score_data$Synchronous == T), ])"
+"0",""
+"0","#sum(score_data[score_data$Subject == ""R1"" & score_data$Synchronous== T, ""score""])"
