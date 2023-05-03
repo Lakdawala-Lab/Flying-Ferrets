@@ -19,7 +19,7 @@ library(ggplot2)
 
 ```{r}
 # Open the .csv file exported from Boris
-data = read.csv("csv files/Brown.Final.cleaned.csv")
+data = read.csv("csv files/cami.csv")
 
 # Remove the title rows (first 20 rows)
 data = data[-c(1:20), ]
@@ -75,7 +75,7 @@ write.csv(data.cleaned, "Cleaned_output.csv")
 data = data.cleaned
  
 colnames(data)[colnames(data) == "X"] <- "Index"
-colnames(data)[colnames(data) == "Modifier.1"] <- "Modifier"
+colnames(data)[colnames(data) == "Modifier 1"] <- "Modifier"
 # Remove the second last column
 data <- data[,-(ncol(data))]
 
