@@ -590,3 +590,72 @@ final_df_frequency
 
 final_df_max_score
 ```
+
+
+
+```{r}
+# Load required libraries
+# library(dplyr)
+
+# Function to find the counts of subjects having the highest value
+highest_value_counts <- function(df) {
+  last_four_cols <- tail(names(df), 4)
+  
+  counts <- data.frame(R1 = 0, R2 = 0, R3 = 0, R4 = 0)
+  
+  for (i in 1:nrow(df)) {
+    row_data <- df[i, last_four_cols]
+    max_col <- which.max(as.numeric(row_data))
+    counts[1, max_col] <- counts[1, max_col] + 1
+  }
+  
+  return(counts)
+}
+
+# Call the function
+result_score <- highest_value_counts(final_df_score)
+print(result_score)
+
+result_max <- highest_value_counts(final_df_max_score)
+print(result_max)
+
+result_fre <- highest_value_counts(final_df_frequency)
+print(result_fre)
+
+
+```
+
+
+```{r, fig.width=8pt}
+library(ggplot2)
+library(tidyr)
+
+# Transform the result dataframe to a long format
+long_result <- result_score %>%
+  mutate(ID = 1) %>%
+  gather(key = "Subject", value = "Count", -ID)
+long_result <- long_result[ , !names(long_result) %in% "ID"]
+
+# Create a histogram using ggplot2
+ggplot(long_result, aes(x = Subject, y = Count, fill = Subject)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 15, hjust = 0.5),
+    axis.title = element_text(size = 10), 
+    axis.title.y = element_text(vjust=0.5), 
+    axis.text = element_text(size = 10),
+    axis.line = element_line(color='black'),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    panel.border = element_blank()
+  )+
+  labs(title = "Ferrets with Highest Exposure Scores \n across All Behaviors",
+       x = "Recipient Ferret",
+       y = "# of Highest Scores") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  guides(fill = FALSE)
+
+ggsave("barplot.png")
+```
+
